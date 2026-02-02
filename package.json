@@ -38,9 +38,16 @@
     "stop": "openclaw gateway stop",
     "status": "openclaw status"
   },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  },
   "dependencies": {
-    "openclaw": "^1.0.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^2.7.0"
   },
   "optionalDependencies": {
     "node-pty": "^1.0.0"

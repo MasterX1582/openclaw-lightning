@@ -1,73 +1,89 @@
 #!/usr/bin/env node
 /**
- * Check Agent Lightning service status
+ * Check Agent Lightning status
  */
 
 const { execSync } = require('child_process');
-const http = require('http');
+const fetch = require('node-fetch');
 
-async function checkHealth() {
-  return new Promise((resolve) => {
-    const req = http.get('http://localhost:8765/health', (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const health = JSON.parse(data);
-          resolve({ reachable: true, data: health });
-        } catch (e) {
-          resolve({ reachable: false, error: 'Invalid response' });
-        }
-      });
-    });
-    
-    req.on('error', () => {
-      resolve({ reachable: false, error: 'Connection refused' });
-    });
-    
-    req.setTimeout(3000, () => {
-      req.destroy();
-      resolve({ reachable: false, error: 'Timeout' });
-    });
-  });
-}
-
-async function main() {
-  console.log('');
-  console.log('🔍 Agent Lightning Status');
-  console.log('═══════════════════════════════════════');
-  console.log('');
-  
+async function checkService() {
   // Check systemd service
+  let serviceStatus = 'unknown';
   try {
-    const status = execSync('systemctl --user is-active openclaw-lightning.service', { encoding: 'utf-8' }).trim();
-    console.log(`Service: ${status === 'active' ? '✅ Running' : '❌ Not running'}`);
-  } catch (e) {
-    console.log('Service: ❌ Not found or not running');
+    const status = execSync('systemctl --user is-active openclaw-lightning', { encoding: 'utf-8' }).trim();
+    serviceStatus = status;
+  } catch {
+    serviceStatus = 'inactive';
+  }
+  
+  // Check bridge health
+  let bridgeStatus = 'unknown';
+  let stats = null;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch('http://localhost:8765/health', { 
+      signal: controller.signal 
+    });
+    clearTimeout(timeout);
+    if (response.ok) {
+      bridgeStatus = 'healthy';
+      
+      // Get stats
+      const statsResponse = await fetch('http://localhost:8765/stats', { timeout: 2000 });
+      if (statsResponse.ok) {
+        stats = await statsResponse.json();
+      }
+    } else {
+      bridgeStatus = 'unhealthy';
+    }
+  } catch {
+    bridgeStatus = 'unreachable';
+  }
+  
+  // Display status
+  console.log('╔════════════════════════════════════════════════════════════╗');
+  console.log('║  ⚡ Agent Lightning Status                                 ║');
+  console.log('╚════════════════════════════════════════════════════════════╝');
+  console.log('');
+  
+  const serviceIcon = serviceStatus === 'active' ? '✅' : '❌';
+  const bridgeIcon = bridgeStatus === 'healthy' ? '✅' : '❌';
+  
+  console.log(`Service:      ${serviceIcon} ${serviceStatus}`);
+  console.log(`Bridge:       ${bridgeIcon} ${bridgeStatus}`);
+  console.log(`URL:          http://localhost:8765`);
+  console.log('');
+  
+  if (stats) {
+    console.log('Performance:');
+    console.log(`  Sessions:   ${stats.total_sessions || 0} total`);
+    console.log(`  Traces:     ${stats.total_traces || 0} total`);
+    console.log(`  Rewards:    ${stats.total_rewards || 0} total`);
+    console.log(`  Uptime:     ${formatUptime(stats.uptime_seconds)}`);
     console.log('');
-    console.log('To install: npm run lightning:setup');
-    process.exit(1);
   }
   
-  // Check HTTP endpoint
-  const health = await checkHealth();
-  
-  if (health.reachable) {
-    console.log('Bridge: ✅ Reachable (port 8765)');
-    console.log(`Tracing: ${health.data.tracing_enabled ? '✅ Enabled' : '⚠️  Disabled'}`);
-    console.log(`Active Sessions: ${health.data.active_sessions || 0}`);
+  if (serviceStatus === 'active' && bridgeStatus === 'healthy') {
+    console.log('Status: 🟢 All systems operational');
+  } else if (serviceStatus === 'active' && bridgeStatus !== 'healthy') {
+    console.log('Status: 🟡 Service running but bridge unreachable');
+    console.log('        Check logs: journalctl --user -u openclaw-lightning -n 50');
   } else {
-    console.log(`Bridge: ❌ Not reachable (${health.error})`);
+    console.log('Status: 🔴 Service not running');
+    console.log('        Start with: npm run lightning:start');
   }
-  
   console.log('');
-  console.log('Commands:');
-  console.log('  npm run lightning:start   # Start service');
-  console.log('  npm run lightning:stop    # Stop service');
-  console.log('  npm run lightning:stats   # View statistics');
-  console.log('');
-  
-  process.exit(health.reachable ? 0 : 1);
 }
 
-main().catch(console.error);
+function formatUptime(seconds) {
+  if (!seconds) return 'unknown';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
+
+checkService().catch(error => {
+  console.error('❌ Error checking status:', error.message);
+  process.exit(1);
+});
