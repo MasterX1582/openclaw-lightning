@@ -1,0 +1,61 @@
+{
+  "name": "openclaw-lightning",
+  "version": "2.0.0",
+  "description": "AI agents that learn from experience - OpenClaw + Agent Lightning",
+  "keywords": [
+    "ai",
+    "agent",
+    "reinforcement-learning",
+    "self-improvement",
+    "openclaw",
+    "agent-lightning",
+    "llm",
+    "autonomous-agent"
+  ],
+  "author": "OpenClaw Community",
+  "license": "MIT",
+  "homepage": "https://github.com/your-username/openclaw-lightning",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/openclaw-lightning.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/openclaw-lightning/issues"
+  },
+  "bin": {
+    "openclaw": "./node_modules/openclaw/openclaw.mjs",
+    "openclaw-lightning": "./scripts/cli.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "preuninstall": "node scripts/preuninstall.js",
+    "lightning:setup": "bash lightning/install.sh",
+    "lightning:start": "node scripts/lightning-start.js",
+    "lightning:stop": "node scripts/lightning-stop.js",
+    "lightning:status": "node scripts/lightning-status.js",
+    "lightning:stats": "curl -s http://localhost:8765/stats | node -pe 'JSON.stringify(JSON.parse(require(\"fs\").readFileSync(0)), null, 2)'",
+    "start": "openclaw gateway start",
+    "stop": "openclaw gateway stop",
+    "status": "openclaw status"
+  },
+  "dependencies": {
+    "openclaw": "^1.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "openclaw-lightning": {
+    "bridgePort": 8765,
+    "bridgeUrl": "http://localhost:8765",
+    "pythonMinVersion": "3.10",
+    "features": {
+      "self-learning": true,
+      "prompt-optimization": true,
+      "performance-analytics": true
+    }
+  }
+}
