@@ -94,7 +94,8 @@ async function installLightning() {
       stdio: 'inherit',
       env: {
         ...process.env,
-        LIGHTNING_DIR: path.join(process.env.HOME, '.openclaw', 'lightning')
+        LIGHTNING_DIR: path.join(process.env.HOME, '.openclaw', 'lightning'),
+        NPM_PREFIX_OPENCLAW_LIGHTNING: path.join(__dirname, '..')
       }
     });
     

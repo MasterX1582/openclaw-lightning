@@ -66,9 +66,36 @@ echo "✓ Agent Lightning installed"
 echo ""
 echo "📋 Installing integration files..."
 
-# Copy bridge service
-if [ ! -f "lightning_bridge_service.py" ]; then
-    echo "⚠️  lightning_bridge_service.py not found - needs to be added"
+# Determine package location
+if [ -n "$NPM_PREFIX_OPENCLAW_LIGHTNING" ]; then
+    PACKAGE_DIR="$NPM_PREFIX_OPENCLAW_LIGHTNING"
+elif [ -d "$(npm root -g)/openclaw-lightning" ]; then
+    PACKAGE_DIR="$(npm root -g)/openclaw-lightning"
+elif [ -d "node_modules/openclaw-lightning" ]; then
+    PACKAGE_DIR="node_modules/openclaw-lightning"
+else
+    echo "⚠️  Could not find openclaw-lightning package"
+    echo "   Trying to copy from current directory..."
+    PACKAGE_DIR="."
+fi
+
+echo "📦 Package location: $PACKAGE_DIR"
+
+# Copy bridge service files
+if [ -f "$PACKAGE_DIR/lightning/bridge/lightning_bridge_service.py" ]; then
+    cp "$PACKAGE_DIR/lightning/bridge/lightning_bridge_service.py" .
+    echo "✓ Copied lightning_bridge_service.py"
+else
+    echo "❌ lightning_bridge_service.py not found"
+    exit 1
+fi
+
+if [ -f "$PACKAGE_DIR/lightning/bridge/openclaw_integration.py" ]; then
+    cp "$PACKAGE_DIR/lightning/bridge/openclaw_integration.py" .
+    echo "✓ Copied openclaw_integration.py"
+else
+    echo "❌ openclaw_integration.py not found"
+    exit 1
 fi
 
 # Copy systemd service file
