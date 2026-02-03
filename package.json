@@ -26,6 +26,15 @@
     "openclaw": "./node_modules/openclaw/openclaw.mjs",
     "openclaw-lightning": "./scripts/cli.js"
   },
+  "files": [
+    "index.js",
+    "lib/",
+    "scripts/",
+    "lightning/",
+    "test/",
+    "*.md",
+    "LICENSE"
+  ],
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
     "preuninstall": "node scripts/preuninstall.js",
